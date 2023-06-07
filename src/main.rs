@@ -26,9 +26,9 @@ fn main() {
         }
         3 => {
             let filename = &args[1];
-            let extended_logging_arg = &args[2];
-            let extended_logging = extended_logging_arg == "true";
-            draw(filename, extended_logging);
+            let bw = &args[2];
+            let black_white = bw == "bw";
+            draw(filename, black_white);
         }
         _ => {
             println!("Usage: image-peek <filename> <logging>");
@@ -36,9 +36,12 @@ fn main() {
     }
 }
 
-fn draw(filename: &str, extended_logging: bool) {
-    let vip_char = '█';
-
+fn draw(filename: &str, black_white: bool) {
+    let light_shade = '░';
+    let medium_shade = '▒';
+    let dark_shade = '▓';
+    let full_block = '█';
+    
     let img = image::open(filename).unwrap();
 
     let (term_height, term_width) = termsize::get().map(|size| (size.rows, size.cols)).unwrap();
@@ -51,7 +54,7 @@ fn draw(filename: &str, extended_logging: bool) {
             image_width,
             image_height,
         },
-        extended_logging,
+        false,
     );
 
     let ratio = if ps.width > ps.height {
@@ -79,9 +82,22 @@ fn draw(filename: &str, extended_logging: bool) {
             } else {
                 img.dimensions().1 - 1
             };
-
-            let pixel = img.get_pixel(x_d, y_d);
-            print!("{}", Paint::rgb(pixel[0], pixel[1], pixel[2], vip_char));
+            if !black_white {
+                let pixel = img.get_pixel(x_d, y_d);
+                print!("{}", Paint::rgb(pixel[0], pixel[1], pixel[2], full_block));
+            } else {
+                let pixel = img.get_pixel(x_d, y_d);
+                let avg = ((pixel[0] as u16 + pixel[1] as u16 + pixel[2] as u16) / 3) as u8;
+                if avg < 64 {
+                    print!("{}", Paint::rgb(0, 0, 0, full_block));
+                } else if avg < 128 {
+                    print!("{}", Paint::rgb(0, 0, 0, dark_shade));
+                } else if avg < 192 {
+                    print!("{}", Paint::rgb(0, 0, 0, medium_shade));
+                } else {
+                    print!("{}", Paint::rgb(0, 0, 0, light_shade));
+                }
+            }
         }
         println!();
     }
